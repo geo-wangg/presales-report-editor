@@ -1,0 +1,10 @@
+const assert = require('node:assert/strict');
+const { readLiteral } = require('../src/importer.js');
+const decode = source => JSON.parse(JSON.stringify(readLiteral(source)));
+assert.deepEqual(decode(`[{keyword:"含\\\"引号\\\"", sources:[{snippet:'加粗 <b>内容</b>',},], weight:20},];`), [{ keyword:'含"引号"', sources:[{snippet:'加粗 <b>内容</b>'}], weight:20 }]);
+assert.equal(decode(`'a\\u4e2d\\n\\x62';`), 'a中\nb');
+assert.deepEqual(decode(`{__proto__:{polluted:true},constructor:'数据'};`), { __proto__: undefined, constructor:'数据', ...JSON.parse('{"__proto__":{"polluted":true}}') });
+assert.equal({}.polluted, undefined);
+for (const bad of ['fetch("remote")', '{x:alert(1)}', '[1] + alert(1)', '{x:(1+2)}', '{[foo]:1}', '"unfinished', '1/0', 'undefined']) assert.throws(() => readLiteral(bad));
+assert.throws(() => readLiteral('['.repeat(42) + ']'.repeat(42)));
+console.log('导入数据解析验证通过：静态字面量、转义、嵌套、拒绝表达式与原型隔离。');

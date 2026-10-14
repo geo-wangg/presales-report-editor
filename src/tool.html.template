@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>售前报告编辑工具</title>
+<style>
+*{box-sizing:border-box}body{margin:0;color:#1d2939;background:#f6f8fc;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}button{font:inherit;cursor:pointer;border:1px solid #d7dfed;border-radius:9px;background:white;color:#344054;padding:10px 17px}button:hover{background:#f4f7ff}button.primary{background:#165dff;color:white;border-color:#165dff}button:disabled{opacity:.5;cursor:wait}.tool-head{display:flex;align-items:center;gap:18px;padding:16px 28px;background:white;border-bottom:1px solid #e4e9f1;height:77px}.brand-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:11px;background:#165dff;color:white;font-size:23px}.tool-title{font-size:17px;font-weight:650}.tool-subtitle{color:#667085;font-size:12px;margin-top:4px}.head-meta{margin-left:auto;color:#667085;font-size:12px;max-width:40%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tool-head button{font-size:13px;white-space:nowrap}.welcome{max-width:990px;padding:48px 24px;margin:auto}.eyebrow{font-size:12px;color:#165dff;font-weight:600;letter-spacing:2px}.welcome h1{font-size:36px;line-height:1.35;margin:14px 0}.intro{font-size:15px;color:#667085;line-height:1.9;max-width:690px;margin:0 0 28px}.drop{border:1.5px dashed #b3c8eb;background:white;border-radius:18px;padding:34px;text-align:center;box-shadow:0 8px 30px #19376606}.drop.over{background:#edf3ff;border-color:#165dff}.upload-icon{font-size:24px;color:#165dff;background:#edf3ff;border-radius:12px;width:52px;height:52px;display:grid;place-items:center;margin:0 auto 15px}.drop h2{font-size:19px;margin:0 0 9px}.drop p{font-size:13px;color:#667085;margin:0 0 21px;line-height:1.7}.local-note{font-size:12px;color:#7b8698;margin-top:14px}.features{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:25px}.feature{padding:21px;background:#fff;border:1px solid #e5eaf2;border-radius:13px}.feature strong{display:block;font-size:14px;margin-bottom:8px}.feature p{font-size:13px;line-height:1.75;color:#667085;margin:0}.feature span{color:#165dff;font-size:12px;display:block;margin-bottom:12px}.scope{font-size:12px;color:#7b8698;line-height:1.8;margin:22px 0 0}.workspace{height:calc(100dvh - 77px);display:flex;flex-direction:column}.report-meta{display:flex;align-items:center;gap:14px;padding:9px 28px;font-size:12px;border-bottom:1px solid #e4e9f1;background:#edf3ff;color:#4e5969;min-height:38px}.report-meta strong{color:#165dff}.report-meta .status{margin-left:auto}.frame-wrap{flex:1;min-height:0;position:relative}iframe{border:0;display:block;width:100%;height:100%;background:white}.loading{position:absolute;inset:0;display:grid;place-items:center;background:white;color:#667085;font-size:15px}.loading[hidden],[hidden]{display:none!important}.error{max-width:942px;margin:18px auto 0;padding:14px 18px;border:1px solid #ffd0cc;background:#fff1f0;color:#b42318;border-radius:10px;font-size:13px;line-height:1.7}.error a{color:inherit}dialog{border:0;border-radius:16px;padding:27px;max-width:590px;width:calc(100vw - 40px);color:#1d2939;box-shadow:0 20px 80px #10182830}dialog::backdrop{background:#10182860}dialog h2{font-size:21px;margin:0 0 17px}dialog p,dialog li{font-size:14px;color:#667085;line-height:1.9}dialog ol{padding-left:22px}dialog .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}.save-notice{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1d2939;color:white;border-radius:10px;padding:12px 20px;font-size:13px;box-shadow:0 8px 25px #10182825;z-index:10}@media(max-width:800px){.tool-head{padding:12px 16px;gap:10px}.head-meta,.tool-subtitle{display:none}.tool-head .tool-title{margin-right:auto;font-size:15px}.tool-head button{padding:9px 10px}.welcome{padding-top:30px}.welcome h1{font-size:28px}.features{gap:10px}.feature{padding:15px}.report-meta{padding:9px 16px}.report-meta .details{display:none}}
+</style>
+</head>
+<body>
+<header class="tool-head">
+  <div class="brand-icon" aria-hidden="true">✎</div>
+  <div><div class="tool-title">售前报告编辑工具</div><div class="tool-subtitle">导入 · 编辑 · 同步图表 · 另存 HTML</div></div>
+  <div class="head-meta" id="filename">本地使用，无需登录</div>
+  <button type="button" id="help">使用说明</button>
+  <button type="button" class="primary" id="import">导入报告 HTML</button>
+</header>
+<input id="file" type="file" accept=".html,.htm,text/html" hidden aria-label="选择售前报告 HTML">
+<div id="boot-warning" class="error" role="alert">工具尚未启动。如果按钮无法使用，请用 Chrome、Edge 或 Safari 打开「售前报告编辑工具.html」，或使用已打开的本机预览页面。</div>
+<div id="error" class="error" role="alert" hidden></div>
+<main class="welcome" id="welcome">
+  <div class="eyebrow">PRESALES REPORT EDITOR</div>
+  <h1>让每一份报告，都可以直接修改。</h1>
+  <p class="intro">导入平台生成的同模板售前报告，点击文案直接改，点击数值调整数据。图标、颜色和图表比例随之更新，完成后保存为一份新的 HTML。</p>
+  <div class="drop" id="drop">
+    <div class="upload-icon" aria-hidden="true">↑</div>
+    <h2>把售前报告 HTML 拖到这里</h2>
+    <p>支持原始报告，以及本工具导出的可编辑报告。</p>
+    <button type="button" class="primary" id="choose">选择报告文件</button>
+    <div class="local-note">文件在当前浏览器中处理，不上传到服务器。</div>
+  </div>
+  <div class="features">
+    <div class="feature"><span>01 / 文案</span><strong>像编辑文档一样改文字</strong><p>直接修改正文，选中文字设置加粗、斜体、下划线和颜色。</p></div>
+    <div class="feature"><span>02 / 数据</span><strong>数值与图形一起更新</strong><p>搜索量图标、可见度色块、条形图、环形图和评分随数值变化。占比支持整组填写。</p></div>
+    <div class="feature"><span>03 / 保存</span><strong>保留一份新的报告</strong><p>另存为独立 HTML，保留排版与编辑能力。重新导入即可继续修改。</p></div>
+  </div>
+  <p class="scope">适用于当前平台的同模板售前报告。数据调整后，请同时复核分析文案；业务诊断标签可手动选择。原报告的在线图片和字体仍需联网加载。</p>
+</main>
+<section class="workspace" id="workspace" aria-label="报告编辑区" hidden>
+  <div class="report-meta"><strong id="brand">正在读取报告</strong><span id="details" class="details"></span><span class="status" id="status">加载中</span></div>
+  <div class="frame-wrap"><iframe id="report" title="可编辑售前报告" sandbox="allow-scripts allow-forms allow-downloads allow-popups allow-popups-to-escape-sandbox"></iframe><div class="loading" id="loading">正在建立文案与图表的编辑关联…</div></div>
+</section>
+<dialog id="help-dialog" aria-labelledby="help-title"><h2 id="help-title">如何编辑一份报告</h2><ol><li>导入平台生成的售前报告 HTML，工具会自动进入编辑模式。</li><li>点击文案直接修改。选中文字后，用底部的文字格式工具设置加粗或颜色。</li><li>点击数值或图表打开数据面板。占比类图表可同时填写各项数据，合计 100% 后一次应用；也可以手动选择按比例调整。</li><li>点击报告上方的“预览报告”查看效果；“撤销 / 重做”可以回退或恢复本次修改。</li><li>点击“另存为 HTML”，浏览器会下载新报告。下次可直接打开，或重新导入本工具继续编辑。</li></ol><p>当前支持同一套模板，品牌、竞品、主题和平台数量可不同。分析文案与上游业务诊断不会自动重写；改变模板结构、替换图片暂不支持。</p><div class="actions"><button type="button" id="help-close" class="primary">知道了</button></div></dialog>
+<dialog id="replace-dialog" aria-labelledby="replace-title"><h2 id="replace-title">当前报告还有未保存的修改</h2><p>导入另一份报告会结束当前编辑。可以先取消并另存当前报告，或直接切换。</p><div class="actions"><button type="button" id="replace-cancel">返回并保存当前报告</button><button type="button" id="replace-confirm" class="primary">直接切换报告</button></div></dialog>
+<div id="notice" class="save-notice" role="status" hidden></div>
+<!-- TOOL_ASSETS -->
+<!-- TOOL_SCRIPTS -->
+</body>
+</html>

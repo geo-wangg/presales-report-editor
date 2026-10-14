@@ -1,0 +1,44 @@
+#pre-toolbar, #pre-dialog, #pre-toast, #pre-format { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; color: #1d2129; letter-spacing: 0; }
+#pre-toolbar { position: fixed; top: 0; left: 0; right: 0; z-index: 100000; background: rgba(255,255,255,.97); box-shadow: 0 2px 16px #0d2d6c14; border-bottom: 1px solid #e5e6eb; padding: 12px 24px; display: flex; gap: 16px; align-items: center; min-height: 66px; }
+#pre-toolbar .pre-name { font-size: 15px; font-weight: 650; white-space: nowrap; }
+#pre-toolbar .pre-mode { border-radius: 20px; background: #f2f3f5; color: #4e5969; padding: 5px 10px; font-size: 12px; white-space: nowrap; }
+#pre-toolbar .pre-help { flex: 1; font-size: 12px; color: #687385; line-height: 1.5; }
+#pre-toolbar button, #pre-dialog button { border: 1px solid #dce2eb; background: white; color: #374151; border-radius: 8px; padding: 9px 14px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+#pre-toolbar button.primary, #pre-dialog button.primary { background: #165dff; border-color: #165dff; color: white; }
+#pre-toolbar button:disabled { cursor: default; opacity: .38; }
+body.pre-editor-page { padding-top: 66px; }
+body.pre-edit [data-pre-text] { cursor: text; outline: 1px dashed transparent; outline-offset: 3px; }
+body.pre-edit [data-pre-text]:hover, body.pre-edit [data-pre-text]:focus { outline-color: #8fb3ff; background-color: #165dff08; }
+body.pre-edit [data-pre-field] { cursor: pointer; outline: 1px dashed #165dff55; outline-offset: 3px; border-radius: 3px; }
+body.pre-edit [data-pre-field]:hover { outline: 2px solid #165dff; background-color: #165dff10; }
+body.pre-edit [data-pre-chart] { position: relative; cursor: pointer; outline: 1px dashed #165dff55; outline-offset: 4px; }
+body.pre-edit [data-pre-chart]:hover { outline: 2px solid #165dff; }
+body.pre-edit .topic-mention-score { cursor: pointer; }
+#pre-dialog { border: 0; padding: 0; width: min(600px, calc(100vw - 48px)); max-height: 85vh; border-radius: 16px; box-shadow: 0 24px 100px #13294f4d; }
+#pre-dialog::backdrop { background: #14244266; backdrop-filter: blur(3px); }
+#pre-dialog .pre-dialog-head { display: flex; justify-content: space-between; align-items: center; padding: 22px 24px 12px; gap: 16px; }
+#pre-dialog h2 { margin: 0; font-size: 19px; font-weight: 650; }
+#pre-dialog .pre-dialog-sub { font-size: 13px; color: #687385; margin: 0; padding: 0 24px 18px; line-height: 1.6; }
+#pre-dialog .pre-fields { padding: 0 24px; overflow-y: auto; max-height: 45vh; }
+#pre-dialog .pre-row { display: grid; grid-template-columns: minmax(0, 1fr) 160px; gap: 16px; align-items: center; padding: 6px 0; border-top: 1px solid #edf0f5; font-size: 14px; }
+#pre-dialog label { display: block; min-width: 0; word-break: break-word; }
+#pre-dialog input, #pre-dialog select { width: 100%; border: 1px solid #ccd5e3; border-radius: 8px; padding: 8px 12px; color: #1d2129; background: white; font-size: 15px; outline-color: #165dff; }
+#pre-dialog .pre-total { font-size: 13px; color: #4e5969; margin: 12px 24px 0; }
+#pre-dialog .pre-error { font-size: 13px; color: #d92d20; margin: 8px 24px; min-height: 20px; }
+#pre-dialog .pre-actions { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 24px 22px; }
+#pre-toast { position: fixed; z-index: 100002; bottom: 24px; left: 50%; transform: translateX(-50%); color: white; background: #1e293b; box-shadow: 0 8px 24px #14244233; border-radius: 10px; padding: 12px 20px; font-size: 13px; max-width: 80vw; line-height: 1.5; }
+[data-pre-chart] svg.pre-donut { display: block; width: 100%; height: 100%; }
+#pre-format { position: fixed; z-index: 100001; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #fff; border: 1px solid #dbe3ee; border-radius: 12px; box-shadow: 0 8px 36px #13294f26; max-width: calc(100vw - 32px); white-space: nowrap; }
+#pre-format[hidden] { display: none; }
+#pre-format button { height: 32px; min-width: 32px; border: 1px solid #dce2eb; background: white; color: #374151; border-radius: 6px; cursor: pointer; font-size: 14px; padding: 4px 9px; }
+#pre-format button[aria-pressed="true"] { color: #165dff; background: #edf3ff; border-color: #a2bdff; }
+#pre-format button:disabled, #pre-format input:disabled { opacity: .35; cursor: default; }
+#pre-format .pre-format-name { font-size: 13px; font-weight: 600; margin-right: 3px; }
+#pre-format .pre-format-divider { height: 22px; width: 1px; background: #e5e6eb; margin: 0 2px; }
+#pre-format .pre-color-label, #pre-format .pre-format-hint { font-size: 12px; color: #687385; }
+#pre-format .pre-color { padding: 4px; width: 30px; min-width: 30px; }
+#pre-format .pre-color::after { content: ''; display: block; width: 19px; height: 19px; background: var(--swatch); border-radius: 4px; }
+#pre-format .pre-custom-color { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #687385; cursor: pointer; }
+#pre-format input[type="color"] { width: 28px; height: 28px; padding: 2px; background: white; border: 1px solid #dce2eb; border-radius: 5px; cursor: pointer; }
+@media (max-width: 1150px) { #pre-format .pre-format-hint { display: none; } }
+@media print { #pre-toolbar, #pre-dialog, #pre-toast, #pre-format { display: none !important; } body.pre-editor-page { padding-top: 0; } [data-pre-text], [data-pre-field], [data-pre-chart] { outline: none !important; } }
