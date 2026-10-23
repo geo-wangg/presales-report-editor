@@ -5,6 +5,16 @@
   const $$ = (s, root = document) => Array.from(root?.querySelectorAll(s) || []);
   const saved = JSON.parse($('#pre-state')?.textContent || '{}');
   const state = { version: 5, values: saved.values || {}, texts: saved.texts || {}, editedKeys: saved.editedKeys || [], brand: saved.brand || $('.hero-brand')?.textContent.trim() || '本品' };
+  // Older exports stored the entire cover h1 as one rich-text block.
+  // Split its saved content before binding nodes so brand edits cannot be swallowed by h1.
+  $$('[data-pre-text]').filter(node => $('.hero-brand', node)).forEach(node => {
+    const key = node.dataset.preText;
+    if (key in state.texts) node.innerHTML = state.texts[key];
+    $$('.hero-brand, [data-hero-report], [data-hero-subtitle]', node).forEach((child, i) => {
+      child.dataset.preText = child.dataset.preText || key + '.cover.' + i;
+    });
+    node.removeAttribute('data-pre-text'); delete state.texts[key];
+  });
   const host = JSON.parse($('#pre-host')?.textContent || 'null');
   const sendHost = (type, data = {}) => { if (host && window.parent !== window) window.parent.postMessage({ channel: host.channel, type, ...data }, '*'); };
   const fields = new Map(), groups = new Map(), renders = [], textNodes = new Map();
@@ -395,7 +405,7 @@
   $$('.compete-strategy-rate-text strong').forEach((label, i) => field(label, label.dataset.preField || 'competition.platform.' + i, number(label.textContent), '分平台正向及推荐率'));
   // 其他纯数值表格单元格可独立编辑（不推导不同统计口径的总指标）。
   $$('table td').forEach((cell, i) => { if ((cell.dataset.preField && fields.has(cell.dataset.preField)) || $('[data-pre-field]', cell) || !/^\s*[\d,.]+%?\s*$/.test(cell.textContent)) return; const isPercent = cell.textContent.includes('%'); field(cell, cell.dataset.preField || 'table.cell.' + i, number(cell.textContent), '表格数值', { max: isPercent ? 100 : 1e12, format: isPercent ? percent : fmt }); });
-  $$('header.cover *, main *').filter(node => !node.children.length && (!node.dataset.preField || !fields.has(node.dataset.preField)) && !node.closest('script, style, svg, [data-pre-chart], .geo-tooltip, .metric-tooltip') && /^\s*[\d,.]+%?\+?\s*$/.test(node.textContent)).forEach((node, i) => {
+  $$('header.cover *, main *').filter(node => !node.children.length && (!node.dataset.preField || !fields.has(node.dataset.preField)) && !node.closest('script, style, svg, [data-pre-chart], .geo-tooltip, .metric-tooltip, .gw-module-improve-tag') && /^\s*[\d,.]+%?\+?\s*$/.test(node.textContent)).forEach((node, i) => {
     const raw = node.textContent.trim(), isPercent = raw.includes('%'), plus = raw.includes('+'), comma = raw.includes(','), padded = /^0\d+$/.test(raw) ? raw.length : 0;
     field(node, node.dataset.preField || 'standalone.' + i, number(raw), '报告数值', { max: 1e12, format: v => (isPercent ? percent(v) : padded ? String(v).padStart(padded, '0') : comma ? Number(v).toLocaleString('en-US') : fmt(v)) + (plus ? '+' : '') });
   });
@@ -403,7 +413,7 @@
   // 只让正文块成为富文本编辑区，保持强调色、链接与版式。
   const textSelectors = '.hero-brand, [data-hero-report], [data-hero-subtitle], .cover-target, .cover-card-cnt em, h1, h2, h3, h4, p, .summary-copy, .gw-overview-desc, .gw-module-desc, .gw-module-impact, .competitor-block > div, .competitor-analysis-text, .summary-diagnosis-copy, .guide-step-desc, .guide-step-title, .opportunity-card-summary, .topic-mention-topic, .topic-mention-topic-sub, .prompt-mention-question, .prompt-mention-question-sub, .bar-chart-brand-name, .citation-card-title, .section-title-en, .keyword-chip, .ai-visibility-rate-topic';
   const leafTexts = $$('header.cover *, main *').filter(node => !node.children.length && !node.dataset.preField && !node.closest('script, style, svg, [data-pre-chart], .geo-tooltip, .metric-tooltip, .topic-mention-score, .metric-ranking, .gw-overview-tag') && !node.hasAttribute('data-pre-chart') && node.textContent.trim());
-  const candidates = [...new Set([...$$('[data-pre-text]'), ...$$(textSelectors), ...leafTexts])].filter(node => !node.closest('script, style, .nav-rail, .nav-menu, svg') && !node.dataset.preField && !$('[data-pre-field], [data-pre-chart]', node) && node.textContent.trim());
+  const candidates = [...new Set([...$$('[data-pre-text]'), ...$$(textSelectors), ...leafTexts])].filter(node => !node.closest('script, style, .nav-rail, .nav-menu, svg') && !node.dataset.preField && !$('[data-pre-field], [data-pre-chart], .hero-brand, [data-hero-report], [data-hero-subtitle]', node) && node.textContent.trim());
   candidates.filter(node => !candidates.some(other => other !== node && other.contains(node))).forEach((node, i) => {
     const key = node.dataset.preText || 'text.' + i; node.dataset.preText = key;
     if (!(key in state.texts)) state.texts[key] = node.innerHTML;

@@ -7,7 +7,7 @@ const root = path.join(__dirname, '..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const assets = { editor: process.env.EDITOR_SOURCE ? fs.readFileSync(process.env.EDITOR_SOURCE, 'utf8') : read('src/report-editor.js'), rules: read('src/editor-rules.js'), template: '', css: '' };
 const row = (name, self, rate) => `<div class="bar-chart-wrap"><span class="bar-chart-brand-name">${name}</span><div class="bar-chart-out ${self ? 'is-brand' : ''}"><div><span class="bar-rate-name">${rate}%</span></div></div></div>`;
-const fixture = `<!doctype html><html><head></head><body><header class="cover"><span class="hero-brand">Acme</span><span class="cover-target">Acme</span></header><main id="reportContent">
+const fixture = `<!doctype html><html><head></head><body><header class="cover"><h1><span class="hero-brand">Acme</span><span data-hero-report>GEO Proposal</span></h1><span class="cover-target">Acme</span></header><main id="reportContent">
 <section id="ai-visibility" class="report-section"><div class="visibility-main-rate"><strong>20%</strong></div><div class="bar-chart-grid">${row('Acme', true, 20)}${row('Peer', false, 80)}</div>
 <div class="visibility-sov-overview"><div data-donut-chart data-donut-inner="60" data-donut-outer="90"><script type="application/json" class="donut-data">[{"name":"Acme","value":20,"color":"blue"},{"name":"Peer","value":80,"color":"red"}]</script><div class="donut-canvas"></div><div class="donut-center"><strong>20%</strong><em></em></div></div><ul><li><span class="legend-name">Acme</span><span class="legend-rate">20%</span></li><li><span class="legend-name">Peer</span><span class="legend-rate">80%</span></li></ul></div></section>
 <section id="source-reference" class="report-section"><div class="bar-chart-grid">${row('Acme', false, 20)}${row('Peer', false, 80)}</div></section>
@@ -77,9 +77,21 @@ assert.equal(old.window.PresalesEditor.state.brandId, 'Acme');
 assert.equal(old.window.document.querySelector('.legend-name').textContent, 'Nova');
 assert.equal(old.window.document.querySelector('.compete-strategy-status').textContent, 'Nova胜');
 old.window.close();
+const oldHeading = fixture.replace('<h1>', '<h1 data-pre-text="legacy-heading">')
+  .replace('</body>', '<script id="pre-state" type="application/json">' + JSON.stringify({ version: 4, brand: 'Acme', values: {}, texts: { 'legacy-heading': '<span class="hero-brand"><b>Nova</b></span><span data-hero-report>Saved subtitle</span>' }, editedKeys: [] }) + '</script></body>');
+const migrated = load(oldHeading);
+assert.equal(migrated.window.document.querySelector('h1').hasAttribute('data-pre-text'), false);
+assert.equal(migrated.window.document.querySelector('.hero-brand b').textContent, 'Nova');
+rename(migrated, 'Migrated');
+assert.equal(migrated.window.PresalesEditor.state.brand, 'Migrated');
+assert.equal(migrated.window.document.querySelector('[data-hero-report]').textContent, 'Saved subtitle');
+migrated.window.close();
 let dom = load(fixture);
 try {
+  assert.equal(dom.window.document.querySelector('.hero-brand').hasAttribute('contenteditable'), true);
+  assert.equal(dom.window.document.querySelector('h1').hasAttribute('contenteditable'), false);
   rename(dom, '<b>Nova/TV</b>');
+  assert.equal(dom.window.document.querySelector('[data-hero-report]').textContent, 'GEO Proposal');
   assert.equal(dom.window.PresalesEditor.state.brand, 'Nova/TV');
   dom.window.PresalesEditor.restore(-1); assert.equal(dom.window.PresalesEditor.state.brand, 'Acme');
   dom.window.PresalesEditor.restore(1); assert.equal(dom.window.document.querySelector('.hero-brand b').textContent, 'Nova/TV');
