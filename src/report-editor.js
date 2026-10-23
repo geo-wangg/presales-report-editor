@@ -4,11 +4,36 @@
   const $ = (s, root = document) => root?.querySelector(s) || null;
   const $$ = (s, root = document) => Array.from(root?.querySelectorAll(s) || []);
   const saved = JSON.parse($('#pre-state')?.textContent || '{}');
-  const state = { version: 4, values: saved.values || {}, texts: saved.texts || {}, editedKeys: saved.editedKeys || [], brand: saved.brand || $('.hero-brand')?.textContent.trim() || '本品' };
+  const state = { version: 5, values: saved.values || {}, texts: saved.texts || {}, editedKeys: saved.editedKeys || [], brand: saved.brand || $('.hero-brand')?.textContent.trim() || '本品' };
   const host = JSON.parse($('#pre-host')?.textContent || 'null');
   const sendHost = (type, data = {}) => { if (host && window.parent !== window) window.parent.postMessage({ channel: host.channel, type, ...data }, '*'); };
   const fields = new Map(), groups = new Map(), renders = [], textNodes = new Map();
-  const brand = state.brand;
+  // Keep metric identity stable across display-name edits (including v4 exports).
+  const brand = saved.brandId || state.brand;
+  state.brandId = brand;
+  const brandLabels = new Set();
+  const identity = node => node?.dataset.preBrandIdentity || node?.textContent.trim();
+  const brandSelector = '.hero-brand, .cover-target, .cover-card-cnt em, .bar-chart-brand-name, .legend-name, .topic-mention-table thead th, .opportunity-card-brand-label';
+  $$(brandSelector + ', [data-pre-brand-identity]').forEach(node => {
+    if (identity(node) === brand) { node.dataset.preBrandIdentity = brand; brandLabels.add(node); }
+  });
+  function syncBrand(name) {
+    const previous = state.brand;
+    Object.keys(state.values).filter(key => key.startsWith('stance.')).forEach(key => {
+      if ([previous + '胜', previous + '负'].includes(state.values[key])) state.values[key] = name + state.values[key].slice(-1);
+    });
+    state.brand = name;
+    brandLabels.forEach(node => {
+      // Preserve rich text in the edited hero; structured labels use plain text.
+      if (node.textContent.trim() !== name) node.textContent = name;
+      if (node.dataset.preText) state.texts[node.dataset.preText] = node.innerHTML;
+    });
+    fields.forEach(f => {
+      f.label = (f.brandLabel || f.label).split(' · ').map(part => part === brand ? name : part.startsWith(brand + ' ') ? name + part.slice(brand.length) : part).join(' · ');
+      if (f.choices && f.key.startsWith('stance.')) f.choices = [name + '胜', '持平', name + '负'];
+      f.endpoints.forEach(e => { e.el.title = '编辑：' + f.label; });
+    });
+  }
   let editing = false, dirty = false, dialogContext = null, toastTimer, history = [], historyAt = -1;
   let formatSelection = null, formatting = false;
   const number = text => Number(String(text).replace(/,/g, '').match(/-?\d+(?:\.\d+)?/)?.[0] || 0);
@@ -18,6 +43,7 @@
   function field(el, key, initial, label, options = {}) {
     if (!fields.has(key)) fields.set(key, { key, label, min: 0, max: 100, format: percent, endpoints: [], ...options });
     const f = fields.get(key);
+    if (!f.brandLabel) f.brandLabel = label;
     if (!(key in state.values)) state.values[key] = initial;
     if (el) {
       el.dataset.preField = key;
@@ -59,6 +85,16 @@
   }
   function commitText(node) {
     if (node && state.texts[node.dataset.preText] !== node.innerHTML) {
+      if (node.matches('.hero-brand') || brandLabels.has(node)) {
+        const name = node.textContent.trim();
+        const collision = $$('.topic-mention-table thead th, .bar-chart-brand-name, .legend-name, .opportunity-card-brand-label').some(label => !brandLabels.has(label) && label.textContent.trim() === name)
+          || donutModels.some(model => model.data.some(item => (item.brandId || item.name) !== brand && item.name === name));
+        if (!name || collision) {
+          node.innerHTML = state.texts[node.dataset.preText];
+          notify('品牌名称不能为空或与竞品重名。'); return;
+        }
+        syncBrand(name); render();
+      }
       state.texts[node.dataset.preText] = node.innerHTML;
       record();
     }
@@ -66,16 +102,16 @@
   function restore(offset) {
     if (historyAt + offset < 0 || historyAt + offset >= history.length) return;
     historyAt += offset; const previous = JSON.parse(history[historyAt]);
-    state.values = previous.values; state.texts = previous.texts; state.editedKeys = previous.editedKeys;
+    state.values = previous.values; state.texts = previous.texts; state.editedKeys = previous.editedKeys; state.brand = previous.brand;
     textNodes.forEach((node, key) => { if (key in state.texts) node.innerHTML = state.texts[key]; });
-    dirty = true; render();
+    syncBrand(state.brand); dirty = true; render();
   }
   function edited(key) { return state.editedKeys.includes(key); }
   function mark(keys) { keys.forEach(k => { if (!state.editedKeys.includes(k)) state.editedKeys.push(k); }); }
 
   // 主题表格使用更精确的“当前可见度”表还原原始小数。
   const topicRows = $$('.topic-mention-table tbody tr');
-  const topicBrandIndex = $$('.topic-mention-table thead th').slice(2).findIndex(th => th.textContent.trim() === brand);
+  const topicBrandIndex = $$('.topic-mention-table thead th').slice(2).findIndex(th => identity(th) === brand);
   const topicNames = topicRows.map(row => { const name = row.dataset.preTopic || $('.topic-mention-topic', row)?.getAttribute('title') || $('.topic-mention-topic', row)?.textContent.trim(); row.dataset.preTopic = name; return name; });
   const rawTopicRates = new Map();
   $$('.ai-visibility-rate-table tbody tr').forEach(row => rawTopicRates.set(row.cells[0].textContent.trim(), number(row.cells[1].textContent)));
@@ -88,7 +124,7 @@
     const topic = topicNames[i];
     volume($('.search-volume', row), 'topic.' + i + '.volume', topic + ' · 搜索量');
     $$('.topic-mention-score', row).forEach((cell, j) => {
-      const name = $$('.topic-mention-table thead th')[j + 2]?.textContent.trim() || '品牌' + j;
+      const name = identity($$('.topic-mention-table thead th')[j + 2]) || '品牌' + j;
       const key = 'topic.' + i + '.brand.' + j;
       const initial = name === brand && rawTopicRates.has(topic) ? rawTopicRates.get(topic) : number($('strong', cell).textContent);
       field($('strong', cell), key, initial, topic + ' · ' + name + ' 可见度', { format: v => Math.round(v) + '%' });
@@ -115,7 +151,7 @@
     const keys = [];
     $$('.opportunity-card-brand', card).forEach((item, j) => {
       const key = item.classList.contains('is-brand') && promptIndex >= 0 ? 'prompt.rate.' + promptIndex : 'opportunity.' + i + '.brand.' + j; keys.push(key);
-      field($('.opportunity-card-brand-rate', item), key, number($('.opportunity-card-brand-rate', item).textContent), '机会 ' + (i + 1) + ' · ' + $('.opportunity-card-brand-label', item).textContent.trim());
+      field($('.opportunity-card-brand-rate', item), key, number($('.opportunity-card-brand-rate', item).textContent), '机会 ' + (i + 1) + ' · ' + identity($('.opportunity-card-brand-label', item)));
     });
     renders.push(() => {
       const items = $$('.opportunity-card-brand', card), max = Math.max(0, ...items.filter(item => !item.classList.contains('is-brand')).map(item => value($('.opportunity-card-brand-rate', item).dataset.preField)));
@@ -133,7 +169,7 @@
         : section === 'source-reference' ? (grid.closest('.citation-category-list') ? 5 : 4) : ordinal + 6;
     const key = 'bar.' + index, rank = index === 3;
     const rows = $$('.bar-chart-wrap', grid).map((row, i) => {
-      const name = $('.bar-chart-brand-name', row).textContent.trim();
+      const name = identity($('.bar-chart-brand-name', row));
       const self = $('.bar-chart-out', row).classList.contains('is-brand') || name === brand;
       const label = $('.bar-rate-name', row);
       let fieldKey = label.dataset.preField || key + '.row.' + i;
@@ -195,22 +231,22 @@
     const overall = !platform && Boolean(wrap.closest('#overview, #ai-visibility'));
     const key = overall ? 'sov.all' : 'sov.platform.' + ($('.donut-canvas', wrap)?.id || index);
     const keys = data.map((item, i) => {
-      const fieldKey = key + '.' + item.name;
+      const fieldKey = key + '.' + (item.brandId || item.name);
       const legacyKey = 'sov.platform.' + index + '.' + item.name;
       if (saved.version <= 3 && platform && !(fieldKey in state.values) && legacyKey in state.values) state.values[fieldKey] = state.values[legacyKey];
-      field(null, fieldKey, item.value, item.name + ' · 提及份额');
+      field(null, fieldKey, item.value, (item.brandId || item.name) + ' · 提及份额');
       return fieldKey;
     });
     group(key, overall ? '整体提及份额（SOV）' : '分平台提及份额（SOV）', keys, { mode: 'distribution', hint: '可同时修改全部品牌的份额，填写其他项目时已输入的数值保持不变。合计100%后一次应用。' });
     chartTarget(wrap, key);
-    const selfIndex = data.findIndex(item => item.name === brand);
+    const selfIndex = data.findIndex(item => (item.brandId || item.name) === brand);
     if (selfIndex >= 0) field($('.donut-center strong', wrap) || $('.donut-center > span', wrap), keys[selfIndex], data[selfIndex].value, brand + ' · 提及份额');
     const legend = wrap.closest('.overview-chart-row, .visibility-sov-overview')?.querySelector('.legend, .visibility-sov-legend');
     const legendRoot = overall ? (wrap.closest('.overview-chart-row') || wrap.parentElement) : null;
-    if (legendRoot) $$('.legend-rate', legendRoot).forEach((label, i) => { const name = $('.legend-name', label.closest('li'))?.textContent.trim(); const idx = data.findIndex(item => item.name === name); if (idx >= 0) field(label, keys[idx], data[idx].value, name + ' · 提及份额'); });
+    if (legendRoot) $$('.legend-rate', legendRoot).forEach((label, i) => { const name = identity($('.legend-name', label.closest('li'))); const idx = data.findIndex(item => (item.brandId || item.name) === name); if (idx >= 0) field(label, keys[idx], data[idx].value, name + ' · 提及份额'); });
     donutModels.push({ wrap, data, keys });
     renders.push(() => {
-      const next = data.map((item, i) => ({ ...item, value: value(keys[i]) }));
+      const next = data.map((item, i) => ({ ...item, ...((item.brandId || item.name) === brand ? { brandId: brand, name: state.brand } : {}), value: value(keys[i]) }));
       $('.donut-data', wrap).textContent = JSON.stringify(next);
       drawDonut($('.donut-canvas', wrap), next, parseFloat(wrap.dataset.donutInner) / 100, parseFloat(wrap.dataset.donutOuter) / 100);
       const rank = $('.donut-center em', wrap);
@@ -449,7 +485,7 @@
     $('[data-action="toggle"]', toolbar).textContent = editing ? '预览报告' : '进入编辑模式';
     $('.pre-help', toolbar).textContent = editing ? '文案直接改 · 选中文字可加粗、改颜色 · 数字和图表点击编辑' : '进入编辑模式后，点击文案直接修改，点击数值或图表调整数据。';
     $('[data-action="undo"]', toolbar).disabled = historyAt <= 0; $('[data-action="redo"]', toolbar).disabled = historyAt >= history.length - 1;
-    sendHost('status', { dirty, editing });
+    sendHost('status', { dirty, editing, brand: state.brand });
   }
   function setEditing(on) { if (document.activeElement?.dataset.preText) document.activeElement.blur(); editing = on; document.body.classList.toggle('pre-edit', on); textNodes.forEach(node => { if (on) { node.setAttribute('contenteditable', 'true'); node.setAttribute('spellcheck', 'false'); } else node.removeAttribute('contenteditable'); }); if (!on) { formatBar.hidden = true; formatSelection = null; } updateToolbar(); }
   function openData(targetKey, isGroup = false) {
@@ -530,7 +566,7 @@
   }
   function saveHTML() {
     const output = serialize(), stamp = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(new Date()).replace(/[-:]/g, '').replace(' ', '_');
-    const filename = brand.replace(/[\\/:*?"<>|\x00-\x1f]/g, '_').slice(0, 80) + '_可编辑报告_' + stamp + '.html';
+    const filename = state.brand.replace(/[\\/:*?"<>|\x00-\x1f]/g, '_').slice(0, 80) + '_可编辑报告_' + stamp + '.html';
     if (host) { sendHost('export', { html: output, filename }); return; }
     const blob = new Blob([output], { type: 'text/html;charset=utf-8' }), url = URL.createObjectURL(blob), link = create('a', { href: url, download: filename });
     document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 30000); dirty = false; updateToolbar(); notify('已生成新的 HTML，保存后可再次打开继续编辑。');
@@ -541,8 +577,9 @@
     if (ev.data.type === 'saved') { dirty = false; updateToolbar(); notify('已生成新的 HTML，保存后可重新导入继续编辑。'); }
     if (ev.data.type === 'prepare-switch') { commitText(document.activeElement?.closest('[data-pre-text]')); sendHost('prepared', { dirty, request: ev.data.request }); }
   });
+  syncBrand($('.hero-brand')?.textContent.trim() || state.brand);
   render(); history = [snapshot()]; historyAt = 0; dirty = false; updateToolbar();
-  if (host) { setEditing(true); sendHost('ready', { brand, fields: fields.size, texts: textNodes.size, charts: $$('[data-pre-chart]').length }); }
+  if (host) { setEditing(true); sendHost('ready', { brand: state.brand, fields: fields.size, texts: textNodes.size, charts: $$('[data-pre-chart]').length }); }
   // 验证接口仅用于本地自动化检查；实际操作通过工具栏和数据面板。
   window.PresalesEditor = { state, fields, groups, render, serialize, setEditing, openData, restore, get dirty() { return dirty; } };
 })();

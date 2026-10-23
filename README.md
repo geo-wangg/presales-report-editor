@@ -30,6 +30,8 @@ GitHub Free 的 Pages 需要公开仓库；其他方案可能支持私有仓库�
 python3 scripts/build.py
 node scripts/verify_rules.cjs
 node scripts/verify_importer.cjs
+# 品牌同步 DOM 回归（首次先 npm ci；需要 Node.js 18+）
+node scripts/verify_brand.cjs
 ```
 
 `src/tool.html.template` 是界面模板。实际网页入口是 `docs/index.html`。
@@ -49,3 +51,5 @@ docs/       实际发布的静态网页
 src/        通用工具与模板适配代码
 scripts/    构建和规则验证
 ```
+
+品牌名编辑会同步本品的结构化标签、图表名称、导出文件名及外层工具品牌栏；空名称与竞品重名会被拒绝。指标使用稳定的内部标识，改名不会迁移或覆盖数值。正文分析中的品牌提及仍需人工修改。保存状态 v5 兼容导入 v4 文件；旧版编辑器不保证能识别 v5 文件。

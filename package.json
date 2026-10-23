@@ -1,0 +1,8 @@
+{
+  "name": "presales-report-editor",
+  "private": true,
+  "scripts": {
+    "test": "node scripts/verify_rules.cjs && node scripts/verify_importer.cjs && node scripts/verify_brand.cjs"
+  },
+  "devDependencies": { "jsdom": "26.1.0" }
+}

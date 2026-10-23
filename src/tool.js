@@ -63,6 +63,7 @@
       $('#details').textContent = '已关联 ' + data.fields + ' 个数据项 · ' + data.charts + ' 处图表';
     }
     if (data.type === 'status' || data.type === 'prepared') { dirty = Boolean(data.dirty); $('#status').textContent = dirty ? '有修改未保存' : '已就绪'; }
+    if (data.type === 'status' && typeof data.brand === 'string') $('#brand').textContent = data.brand;
     if (data.type === 'prepared') { const callback = pending.get(data.request); if (callback) { clearTimeout(callback.timer); pending.delete(data.request); callback.resolve(); } }
     if (data.type === 'export' && typeof data.html === 'string' && typeof data.filename === 'string') {
       download(data.html, data.filename); dirty = false; $('#status').textContent = '已生成新 HTML';
